@@ -287,7 +287,12 @@ function renderTable(items, sectionId) {
     // Always select top N by score (points), then sort for display
     const byScore = items.slice().sort((a, b) => (parseInt(b.score) || 0) - (parseInt(a.score) || 0));
     const topItems = sortItems(byScore.slice(0, currentTopN));
-    let html = '<table>';
+    let html = '<div class="mobile-actions">';
+    html += '<button onclick="openAllLinks(\'' + sectionId + '\', \'hn\')">open all hn</button>';
+    html += '<button onclick="openAllLinks(\'' + sectionId + '\', \'ext\')">open all links</button>';
+    html += '<button onclick="openAllLinks(\'' + sectionId + '\', \'arc\')">open all archives</button>';
+    html += '</div>';
+    html += '<table>';
     html += '<thead><tr>';
     html += '<th class="col-score sortable' + (currentSort === 'score' ? ' sort-active' : '') + '" onclick="setSort(\'score\')">points' + sortArrow('score') + '</th>';
     html += '<th class="col-comments sortable' + (currentSort === 'comments' ? ' sort-active' : '') + '" onclick="setSort(\'comments\')"><span class="th-label">cmts' + sortArrow('comments') + '</span> <span class="open-all" onclick="event.stopPropagation();openAllLinks(\'' + sectionId + '\', \'hn\')">open all</span></th>';
@@ -309,7 +314,7 @@ function renderTable(items, sectionId) {
         const userUrl = user ? 'https://news.ycombinator.com/user?id=' + encodeURIComponent(user) : '';
         const postDate = item.timestamp ? item.timestamp.split('T')[0] : '';
 
-        html += '<tr>';
+        html += '<tr class="post-row">';
         html += '<td class="col-score">' + score.toLocaleString() + '</td>';
         html += '<td class="col-comments"><a href="' + hnUrl + '" data-link="hn" target="_blank">' + comments.toLocaleString() + '</a></td>';
         html += '<td class="col-title"><a href="' + escapeHtml(articleUrl) + '" data-link="ext" target="_blank">' + title + '</a>';
@@ -552,6 +557,10 @@ function setupScrollTracking(ids) {
 function setupTimelineTooltip() {
     const tooltip = document.getElementById('tl-tooltip');
     if (!tooltip) return;
+    const timeline = document.getElementById('timeline');
+    if (!timeline) return;
+
+    // Desktop: mouse hover tooltips
     document.querySelectorAll('.tl-item[data-label]').forEach(item => {
         item.addEventListener('mouseenter', function() {
             const label = this.dataset.label;
@@ -565,6 +574,77 @@ function setupTimelineTooltip() {
         item.addEventListener('mouseleave', function() {
             tooltip.classList.remove('visible');
         });
+    });
+
+    // Mobile: touch drag tooltips
+    let touchActive = false;
+    let lastTouchedItem = null;
+
+    function showTooltipForItem(item) {
+        const label = item.dataset.label;
+        if (label) {
+            const rect = item.getBoundingClientRect();
+            tooltip.textContent = label;
+            tooltip.style.top = (rect.top + rect.height / 2) + 'px';
+            tooltip.style.right = (window.innerWidth - rect.left + 8) + 'px';
+            tooltip.classList.add('visible');
+        } else {
+            // Items without data-label (yearly/10y with visible text)
+            const yearText = item.querySelector('.tl-year-text');
+            if (yearText) {
+                const rect = item.getBoundingClientRect();
+                tooltip.textContent = yearText.textContent;
+                tooltip.style.top = (rect.top + rect.height / 2) + 'px';
+                tooltip.style.right = (window.innerWidth - rect.left + 8) + 'px';
+                tooltip.classList.add('visible');
+            } else {
+                tooltip.classList.remove('visible');
+            }
+        }
+    }
+
+    function handleTouchMove(e) {
+        const touch = e.touches[0];
+        if (!touch) return;
+        const el = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (!el) return;
+        const item = el.closest('.tl-item');
+        if (!item) {
+            tooltip.classList.remove('visible');
+            lastTouchedItem = null;
+            return;
+        }
+        lastTouchedItem = item;
+        showTooltipForItem(item);
+    }
+
+    timeline.addEventListener('touchstart', function(e) {
+        touchActive = true;
+        lastTouchedItem = null;
+        handleTouchMove(e);
+        e.preventDefault();
+    }, { passive: false });
+
+    timeline.addEventListener('touchmove', function(e) {
+        if (!touchActive) return;
+        handleTouchMove(e);
+        e.preventDefault();
+    }, { passive: false });
+
+    timeline.addEventListener('touchend', function() {
+        if (!touchActive) return;
+        touchActive = false;
+        tooltip.classList.remove('visible');
+        if (lastTouchedItem && lastTouchedItem.dataset.id) {
+            scrollToId(lastTouchedItem.dataset.id);
+        }
+        lastTouchedItem = null;
+    });
+
+    timeline.addEventListener('touchcancel', function() {
+        touchActive = false;
+        tooltip.classList.remove('visible');
+        lastTouchedItem = null;
     });
 }
 

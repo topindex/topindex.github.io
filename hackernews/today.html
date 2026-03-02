@@ -192,6 +192,11 @@ function render() {
 
     const topItems = sortStories(stories).slice(0, currentTopN);
     let html = '<div class="year-section"><details open id="fp-section"><summary><span class="year-label">Front Page</span></summary>';
+    html += '<div class="mobile-actions">';
+    html += '<button onclick="openAllLinks(\'fp-section\', \'hn\')">open all hn</button>';
+    html += '<button onclick="openAllLinks(\'fp-section\', \'ext\')">open all links</button>';
+    html += '<button onclick="openAllLinks(\'fp-section\', \'arc\')">open all archives</button>';
+    html += '</div>';
     html += '<table>';
     html += '<thead><tr>';
     html += '<th class="col-score sortable' + (currentSort === 'score' ? ' sort-active' : '') + '" onclick="setSort(\'score\')">points' + sortArrow('score') + '</th>';
@@ -200,7 +205,7 @@ function render() {
     html += '<th class="col-archived"><span class="open-all" onclick="openAllLinks(\'fp-section\', \'arc\')">open all</span></th>';
     html += '<th class="col-user"></th>';
     html += '<th class="col-date sortable' + (currentSort === 'date' ? ' sort-active' : '') + '" onclick="setSort(\'date\')">date' + sortArrow('date') + '</th>';
-    html += '<th class="col-date">when</th>';
+    html += '<th class="col-when">when</th>';
     html += '</tr></thead><tbody>';
 
     for (const item of topItems) {
@@ -213,7 +218,7 @@ function render() {
         const userUrl = user ? 'https://news.ycombinator.com/user?id=' + encodeURIComponent(user) : '';
         const ago = timeAgo(item.created_at);
 
-        html += '<tr>';
+        html += '<tr class="post-row">';
         html += '<td class="col-score">' + item.score.toLocaleString() + '</td>';
         html += '<td class="col-comments"><a href="' + hnUrl + '" data-link="hn" target="_blank">' + item.comments.toLocaleString() + '</a></td>';
         html += '<td class="col-title"><a href="' + escapeHtml(articleUrl) + '" data-link="ext" target="_blank">' + title + '</a>';
@@ -223,7 +228,7 @@ function render() {
         html += '<td class="col-user">' + (user ? '<a href="' + userUrl + '" target="_blank">' + escapeHtml(user) + '</a>' : '') + '</td>';
         const postDate = item.created_at ? item.created_at.split('T')[0] : '';
         html += '<td class="col-date">' + postDate + '</td>';
-        html += '<td class="col-date">' + ago + '</td>';
+        html += '<td class="col-when">' + ago + '</td>';
         html += '</tr>';
     }
 

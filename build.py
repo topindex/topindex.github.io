@@ -168,7 +168,8 @@ def patch_hackernews_html():
 ROOT_FAVICON = """\
 <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
   <rect width="32" height="32" rx="6" fill="#ff6600"/>
-  <text x="16" y="23" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="20" font-weight="700" fill="#fff">ti</text>
+  <text x="9" y="23" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="20" font-weight="700" fill="#fff">t</text>
+  <text x="22" y="23" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="20" font-weight="700" fill="#fff">i</text>
 </svg>"""
 
 

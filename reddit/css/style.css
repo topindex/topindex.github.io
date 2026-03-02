@@ -1005,7 +1005,7 @@ body:has(.directory-page) .site-header-inner {
 /* === Theme Toggle === */
 
 .theme-toggle {
-  background: none;
+  background: var(--color-bg);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   cursor: pointer;
@@ -1015,7 +1015,10 @@ body:has(.directory-page) .site-header-inner {
   justify-content: center;
   color: var(--color-text-muted);
   transition: all 0.15s;
-  flex-shrink: 0;
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 1000;
 }
 
 .theme-toggle:hover {
