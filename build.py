@@ -77,59 +77,36 @@ def sync_sources():
 # --- HTML Patching ---
 
 
+# CSS injected into reddit HTML <head> so the subtitle link inherits
+# hover color from .title-subtitle:hover (source CSS sets color on the
+# span, but a nested <a> with its own color rule won't inherit without this).
+REDDIT_TITLE_CSS = """\
+<style>.site-header .title-subtitle a, .site-header .title-subtitle a:visited { color: inherit; text-decoration: none; } .site-header .title-subtitle:hover { color: var(--color-text); } .site-header .title-subtitle a:hover { color: var(--color-accent); }</style>"""
+
+
 def patch_reddit_html():
     """Patch reddit HTML files: make subtitle text a link to ./"""
     reddit_dir = os.path.join(SITE_DIR, "reddit")
     html_files = [f for f in os.listdir(reddit_dir) if f.endswith(".html")]
 
     # Pattern: <span class="title-subtitle">| top reddit posts</span>
+    # Only wrap text in link; do not add classes — source CSS handles hover
+    # via .site-header h1 a:hover and .title-subtitle:hover
     pattern = r'(<span class="title-subtitle">\| )(top reddit posts)(</span>)'
-    replacement = r'\1<a href="./" class="subtitle-link">\2</a>\3'
+    replacement = r'\1<a href="./">\2</a>\3'
 
     for fname in html_files:
         path = os.path.join(reddit_dir, fname)
         text = open(path, "r").read()
         new_text = re.sub(pattern, replacement, text)
         if new_text != text:
+            # Inject CSS if not already present
+            if ".title-subtitle a" not in new_text:
+                new_text = new_text.replace("</head>", REDDIT_TITLE_CSS + "\n</head>")
             open(path, "w").write(new_text)
             print(f"  patched {fname}")
         else:
             print(f"  skip {fname} (already patched or no match)")
-
-
-def patch_reddit_css():
-    """Add subtitle-link hover styles to reddit CSS if not present."""
-    css_path = os.path.join(SITE_DIR, "reddit", "css", "style.css")
-    text = open(css_path, "r").read()
-
-    if ".subtitle-link" in text:
-        print("  skip style.css (already patched)")
-        return
-
-    # Insert after .title-subtitle block
-    marker = "/* === Subreddit Info === */"
-    snippet = """\
-.subtitle-link {
-  color: var(--color-text);
-  text-decoration: none;
-  transition: color 0.15s;
-}
-
-.subtitle-link:visited {
-  color: var(--color-text);
-}
-
-.subtitle-link:hover {
-  color: var(--color-accent);
-}
-
-"""
-    if marker in text:
-        text = text.replace(marker, snippet + marker)
-        open(css_path, "w").write(text)
-        print("  patched style.css")
-    else:
-        print("  WARNING: could not find CSS insertion marker")
 
 
 HN_TITLE_CSS = """\
@@ -482,22 +459,18 @@ function toggleTheme() {{
 def main():
     print("=== topindex build ===\n")
 
-    print("[1/5] Syncing sources...")
+    print("[1/4] Syncing sources...")
     sync_sources()
 
-    print("[2/5] Patching reddit HTML...")
+    print("[2/4] Patching reddit HTML...")
     patch_reddit_html()
     print()
 
-    print("[3/5] Patching reddit CSS...")
-    patch_reddit_css()
-    print()
-
-    print("[4/5] Patching hackernews HTML...")
+    print("[3/4] Patching hackernews HTML...")
     patch_hackernews_html()
     print()
 
-    print("[5/5] Generating root index...")
+    print("[4/4] Generating root index...")
     generate_index()
     print()
 

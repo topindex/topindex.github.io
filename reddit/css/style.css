@@ -84,32 +84,23 @@ a:hover {
   transition: color 0.15s;
 }
 
+.site-header h1 a:visited {
+  color: var(--color-text);
+}
+
 .site-header h1 a:hover {
   color: var(--color-accent);
   text-decoration: none;
-}
-
-.site-header h1 a:visited {
-  color: var(--color-text);
 }
 
 .title-subtitle {
   font-weight: 400;
   color: var(--color-text);
   font-size: 14px;
-}
-
-.subtitle-link {
-  color: var(--color-text);
-  text-decoration: none;
   transition: color 0.15s;
 }
 
-.subtitle-link:visited {
-  color: var(--color-text);
-}
-
-.subtitle-link:hover {
+.title-subtitle:hover {
   color: var(--color-accent);
 }
 
