@@ -40,7 +40,7 @@ SITES = [
         "key": "reddit",
         "label": "Reddit",
         "subtitle": "top reddit posts",
-        "description": "Top posts from the largest subreddits, with growth tracking",
+        "description": "Top posts from subreddits, organized by week, month, and year",
         "icon_svg": (
             '<svg class="site-icon" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">'
             '<rect width="32" height="32" rx="6" fill="#ff6600"/>'
