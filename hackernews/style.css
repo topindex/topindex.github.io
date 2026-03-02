@@ -754,6 +754,17 @@ summary:hover .permalink {
     /* --- Sections spacing --- */
     .period-section { margin: 4px 6px; }
     .year-section { margin-bottom: 12px; }
+
+    /* --- Fix iOS Safari double-tap on details/summary --- */
+    .permalink {
+        display: none;
+    }
+
+    /* --- Fix collapsed <details> showing empty space --- */
+    details:not([open]) > table,
+    details:not([open]) > .mobile-actions {
+        display: none;
+    }
 }
 
 [data-theme="dark"] .post-row {
