@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css">
+<title>topindex | top hacker news posts — today</title>
+<style>
+.title-main { color: var(--text-heading); text-decoration: none; }
+.title-main:hover { color: var(--accent); }
+.title-subtitle { font-weight: 400; font-size: 0.85em; }
+.title-subtitle a { color: inherit; text-decoration: none; }
+.title-subtitle a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn" title="Toggle dark/light mode"></button>
+    <h1><a href="/" class="title-main">topindex</a> <span class="title-subtitle">| <a href="./">top hacker news posts</a> — today</span></h1>
+    <div class="controls">
+        <div class="control-group">
+            <label>Top:</label>
+            <button data-topn="1" onclick="setTopN(1)">1</button>
+            <button data-topn="3" onclick="setTopN(3)">3</button>
+            <button data-topn="5" class="active" onclick="setTopN(5)">5</button>
+            <button data-topn="10" onclick="setTopN(10)">10</button>
+        </div>
+        <a href="index.html" class="nav-link" title="Historical archive">Archive</a>
+    </div>
+    <div class="last-updated" id="last-updated"></div>
+</div>
+
+<div id="loading" style="display:none">Loading...</div>
+<div id="content"></div>
+
+<button class="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">
+    <svg viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+</button>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+let currentTopN = 5;
+let currentSort = 'score';
+let stories = [];
+const VALID_SORTS = ['score', 'comments', 'date'];
+const REFRESH_INTERVAL = 5 * 60 * 1000;
+
+/* Theme */
+function initTheme() {
+    const saved = localStorage.getItem('hn_theme');
+    if (saved) {
+        document.documentElement.dataset.theme = saved;
+    } else {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.dataset.theme = prefersDark ? 'dark' : 'light';
+    }
+    updateThemeIcon();
+}
+
+function toggleTheme() {
+    const html = document.documentElement;
+    const isDark = html.dataset.theme === 'dark';
+    html.dataset.theme = isDark ? 'light' : 'dark';
+    localStorage.setItem('hn_theme', html.dataset.theme);
+    updateThemeIcon();
+}
+
+function updateThemeIcon() {
+    const btn = document.getElementById('theme-btn');
+    if (btn) btn.innerHTML = document.documentElement.dataset.theme === 'dark' ? '&#9728;&#65039;' : '&#127769;';
+}
+
+initTheme();
+
+/* Helpers */
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function extractDomain(url) {
+    if (!url) return '';
+    try {
+        let d = url.replace(/^https?:\/\//, '').split('/')[0];
+        return d.replace(/^www\./, '');
+    } catch(e) {
+        return '';
+    }
+}
+
+function openAllLinks(sectionId, linkType) {
+    const section = document.getElementById(sectionId);
+    if (!section) return;
+    const links = section.querySelectorAll('a[data-link="' + linkType + '"]');
+    links.forEach(a => window.open(a.href, '_blank'));
+}
+
+function timeAgo(dateStr) {
+    const now = Date.now();
+    const then = new Date(dateStr).getTime();
+    const diff = Math.floor((now - then) / 1000);
+    if (diff < 60) return diff + 's ago';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    return Math.floor(diff / 86400) + 'd ago';
+}
+
+/* Data */
+async function fetchStories() {
+    const loadingEl = document.getElementById('loading');
+    if (stories.length === 0) loadingEl.style.display = 'block';
+
+    try {
+        const resp = await fetch('https://hn.algolia.com/api/v1/search?tags=front_page&hitsPerPage=30', {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36' }
+        });
+        if (!resp.ok) throw new Error('API request failed');
+        const data = await resp.json();
+        stories = data.hits.map(hit => ({
+            id: hit.objectID,
+            title: hit.title,
+            url: hit.url,
+            score: hit.points || 0,
+            comments: hit.num_comments || 0,
+            author: hit.author,
+            created_at: hit.created_at
+        }));
+        loadingEl.style.display = 'none';
+        updateLastUpdated();
+        render();
+    } catch (e) {
+        loadingEl.style.display = 'none';
+        if (stories.length === 0) {
+            document.getElementById('content').innerHTML =
+                '<p style="text-align:center;color:var(--text-faint);padding:40px;">Failed to load data from Algolia API.</p>';
+        }
+    }
+}
+
+function formatUpdatedTime() {
+    const now = new Date();
+    const h = now.getHours();
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return h12 + ':' + m + ' ' + ampm;
+}
+
+function updateLastUpdated() {
+    const el = document.getElementById('last-updated');
+    if (el) el.textContent = 'Updated ' + formatUpdatedTime();
+}
+
+/* Sort & Filter */
+function sortStories(items) {
+    const sorted = items.slice();
+    if (currentSort === 'comments') {
+        sorted.sort((a, b) => b.comments - a.comments);
+    } else if (currentSort === 'date') {
+        sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    } else {
+        sorted.sort((a, b) => b.score - a.score);
+    }
+    return sorted;
+}
+
+function setTopN(n) {
+    currentTopN = n;
+    document.querySelectorAll('[data-topn]').forEach(b => {
+        b.classList.toggle('active', parseInt(b.dataset.topn) === n);
+    });
+    render();
+}
+
+function setSort(key) {
+    if (VALID_SORTS.includes(key)) {
+        currentSort = key;
+        render();
+    }
+}
+
+function sortArrow(key) {
+    return currentSort === key ? ' \u25BC' : '';
+}
+
+/* Render */
+function render() {
+    if (stories.length === 0) return;
+
+    const topItems = sortStories(stories).slice(0, currentTopN);
+    let html = '<div class="year-section"><details open id="fp-section"><summary><span class="year-label">Front Page</span></summary>';
+    html += '<table>';
+    html += '<thead><tr>';
+    html += '<th class="col-score sortable' + (currentSort === 'score' ? ' sort-active' : '') + '" onclick="setSort(\'score\')">points' + sortArrow('score') + '</th>';
+    html += '<th class="col-comments sortable' + (currentSort === 'comments' ? ' sort-active' : '') + '" onclick="setSort(\'comments\')"><span class="th-label">cmts' + sortArrow('comments') + '</span> <span class="open-all" onclick="event.stopPropagation();openAllLinks(\'fp-section\', \'hn\')">open all</span></th>';
+    html += '<th><span class="open-all" onclick="openAllLinks(\'fp-section\', \'ext\')">open all</span></th>';
+    html += '<th class="col-archived"><span class="open-all" onclick="openAllLinks(\'fp-section\', \'arc\')">open all</span></th>';
+    html += '<th class="col-user"></th>';
+    html += '<th class="col-date sortable' + (currentSort === 'date' ? ' sort-active' : '') + '" onclick="setSort(\'date\')">date' + sortArrow('date') + '</th>';
+    html += '<th class="col-date">when</th>';
+    html += '</tr></thead><tbody>';
+
+    for (const item of topItems) {
+        const hnUrl = 'https://news.ycombinator.com/item?id=' + item.id;
+        const domain = extractDomain(item.url);
+        const articleUrl = item.url || hnUrl;
+        const title = escapeHtml(item.title);
+        const archivedUrl = item.url ? 'https://web.archive.org/web/0/' + item.url : '';
+        const user = item.author || '';
+        const userUrl = user ? 'https://news.ycombinator.com/user?id=' + encodeURIComponent(user) : '';
+        const ago = timeAgo(item.created_at);
+
+        html += '<tr>';
+        html += '<td class="col-score">' + item.score.toLocaleString() + '</td>';
+        html += '<td class="col-comments"><a href="' + hnUrl + '" data-link="hn" target="_blank">' + item.comments.toLocaleString() + '</a></td>';
+        html += '<td class="col-title"><a href="' + escapeHtml(articleUrl) + '" data-link="ext" target="_blank">' + title + '</a>';
+        if (domain) html += ' <span class="domain">(' + escapeHtml(domain) + ')</span>';
+        html += '</td>';
+        html += '<td class="col-archived">' + (archivedUrl ? '<a href="' + escapeHtml(archivedUrl) + '" data-link="arc" target="_blank">[archived]</a>' : '') + '</td>';
+        html += '<td class="col-user">' + (user ? '<a href="' + userUrl + '" target="_blank">' + escapeHtml(user) + '</a>' : '') + '</td>';
+        const postDate = item.created_at ? item.created_at.split('T')[0] : '';
+        html += '<td class="col-date">' + postDate + '</td>';
+        html += '<td class="col-date">' + ago + '</td>';
+        html += '</tr>';
+    }
+
+    html += '</tbody></table></details></div>';
+    document.getElementById('content').innerHTML = html;
+    restoreVisitedLinks();
+}
+
+/* Visited links */
+function restoreVisitedLinks() {
+    const visited = JSON.parse(localStorage.getItem('hn_visited') || '{}');
+    document.querySelectorAll('a[data-link="ext"]').forEach(a => {
+        if (visited[a.href]) a.classList.add('visited');
+        a.addEventListener('click', function() {
+            this.classList.add('visited');
+            visited[this.href] = true;
+            localStorage.setItem('hn_visited', JSON.stringify(visited));
+        });
+    });
+}
+
+/* Init */
+document.addEventListener('DOMContentLoaded', function() {
+    fetchStories();
+    setInterval(fetchStories, REFRESH_INTERVAL);
+});
+</script>
+</body>
+</html>

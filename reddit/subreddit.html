@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script>!function(){var e=localStorage.getItem('theme');e||(e=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',e)}()</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loading... | topindex | top reddit posts</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.8.1/dist/nouislider.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/nouislider@15.8.1/dist/nouislider.min.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <h1><a href="/">topindex</a> <span class="title-subtitle">| <a href="./" class="subtitle-link">top reddit posts</a></span></h1>
+      <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </div>
+  </header>
+  <main class="subreddit-detail">
+    <div class="subreddit-header">
+      <form id="subreddit-search-form" class="subreddit-search-form">
+        <span class="search-prefix">r/</span>
+        <input type="text" id="subreddit-input" class="subreddit-input" placeholder="enter subreddit name..." autocomplete="off" spellcheck="false">
+        <button type="submit" class="search-btn">Go</button>
+      </form>
+      <div id="subreddit-info" class="subreddit-info"></div>
+    </div>
+    <div class="controls">
+      <div class="control-group">
+        <label>Interval:</label>
+        <button class="control-btn interval-btn" data-interval="1d">1d</button>
+        <button class="control-btn interval-btn" data-interval="1w">1w</button>
+        <button class="control-btn interval-btn" data-interval="1m">1m</button>
+        <button class="control-btn interval-btn" data-interval="1y">1y</button>
+      </div>
+      <div class="control-group">
+        <label>Top:</label>
+        <button class="control-btn top-btn" data-top="1">1</button>
+        <button class="control-btn top-btn" data-top="3">3</button>
+        <button class="control-btn top-btn" data-top="5">5</button>
+        <button class="control-btn top-btn" data-top="10">10</button>
+      </div>
+      <div class="date-slider-group">
+        <span id="date-range-label" class="date-range-label">All time</span>
+        <div class="date-slider-row">
+          <div id="date-range-slider" class="date-range-slider"></div>
+          <button id="date-range-clear" class="date-range-clear" title="Clear date range">&times;</button>
+        </div>
+      </div>
+    </div>
+    <div id="posts-container"></div>
+    <div class="load-more-container">
+      <button id="load-more-btn" class="load-more-btn" disabled>Load more</button>
+      <p id="end-of-data-msg" class="end-of-data-msg" style="display:none">— end of results —</p>
+    </div>
+    <div id="load-more-sentinel" class="loading-sentinel"></div>
+  </main>
+  <footer class="site-footer">
+    Data from <a href="https://subranking.com" target="_blank" rel="noopener">subranking.com</a> &amp;
+    <a href="https://pullpush.io" target="_blank" rel="noopener">PullPush API</a>
+  </footer>
+  <script>function toggleTheme(){var t=document.documentElement,c=t.getAttribute('data-theme')==='dark'?'light':'dark';t.setAttribute('data-theme',c);localStorage.setItem('theme',c)}</script>
+  <script type="module" src="js/subreddit-page.js"></script>
+</body>
+</html>
