@@ -110,26 +110,23 @@ def patch_reddit_html():
 
 HN_TITLE_CSS = """\
 <style>
-.title-main { color: var(--text-heading); text-decoration: none; }
-.title-main:hover { color: var(--accent); }
-.title-subtitle { font-weight: 400; font-size: 0.85em; }
 .title-subtitle a { color: inherit; text-decoration: none; }
 .title-subtitle a:hover { color: var(--accent); }
 </style>"""
 
 
 def patch_hackernews_html():
-    """Patch hackernews HTML files: restructure header to topindex | subtitle pattern."""
+    """Patch hackernews HTML files: fix home link href and wrap subtitle in link."""
     hn_dir = os.path.join(SITE_DIR, "hackernews")
     patches = {
         "index.html": {
-            "h1_old": '<h1><a href="index.html" class="home-link">Top Hacker News Posts</a></h1>',
-            "h1_new": '<h1><a href="/" class="title-main">topindex</a> <span class="title-subtitle">| <a href="./">top hacker news posts</a></span></h1>',
+            "h1_old": '<h1><a href="index.html" class="home-link">topindex</a> <span class="title-sep">|</span> <span class="title-subtitle">top hacker news posts</span></h1>',
+            "h1_new": '<h1><a href="/" class="home-link">topindex</a> <span class="title-sep">|</span> <span class="title-subtitle"><a href="./">top hacker news posts</a></span></h1>',
         },
         "today.html": {
-            "h1_old": '<h1><a href="today.html" class="home-link">Top Hacker News Posts &mdash; Today</a></h1>',
-            "h1_old_alt": '<h1><a href="today.html" class="home-link">Top Hacker News Posts — Today</a></h1>',
-            "h1_new": '<h1><a href="/" class="title-main">topindex</a> <span class="title-subtitle">| <a href="./">top hacker news posts</a> — today</span></h1>',
+            "h1_old": '<h1><a href="today.html" class="home-link">topindex</a> <span class="title-sep">|</span> <span class="title-subtitle">top hacker news posts — today</span></h1>',
+            "h1_old_alt": '<h1><a href="today.html" class="home-link">topindex</a> <span class="title-sep">|</span> <span class="title-subtitle">top hacker news posts &mdash; today</span></h1>',
+            "h1_new": '<h1><a href="/" class="home-link">topindex</a> <span class="title-sep">|</span> <span class="title-subtitle"><a href="./">top hacker news posts</a> — today</span></h1>',
         },
     }
 
@@ -142,7 +139,7 @@ def patch_hackernews_html():
         text = open(path, "r").read()
 
         # Inject CSS block after </title> if not already present
-        if ".title-main" not in text:
+        if ".title-subtitle a" not in text:
             text = text.replace("</title>", "</title>\n" + HN_TITLE_CSS)
 
         # Replace h1
