@@ -93,18 +93,19 @@ async function loadSfwOverrides() {
 
 /**
  * Check if a subreddit is NSFW.
- * First checks sfw_overrides.json (always allowed), then the pre-fetched
- * about cache, then falls back to PullPush API to check the over_18 flag.
+ * Checks sfw_overrides (always allowed), about cache, Reddit API,
+ * PullPush API, then blocks unknown subs for safety.
  */
 export async function checkSubredditNsfw(subreddit) {
   // Check SFW overrides first — these are never blocked
   const overrides = await loadSfwOverrides();
   if (overrides.has(subreddit.toLowerCase())) return false;
 
+  // Check about cache — only trust over18=true (block); false may be stale
   const about = await fetchSubredditAbout(subreddit);
-  if (about) return !!about.over_18;
+  if (about && about.over18 === true) return true;
 
-  // Fallback: check via PullPush (one post is enough)
+  // Fallback: check via PullPush (CORS-enabled)
   try {
     const url = `${PULLPUSH_BASE}?subreddit=${encodeURIComponent(subreddit)}&sort_type=score&sort=desc&size=1`;
     const response = await fetchWithRetry(() => fetch(url));
@@ -113,10 +114,14 @@ export async function checkSubredditNsfw(subreddit) {
       return !!json.data[0].over_18;
     }
   } catch (e) {
-    // On error, fail-closed (block) for safety
-    return true;
+    // On error, fall through to block
   }
-  return false;
+
+  // If sub is in about cache with over18=false, trust it
+  if (about) return false;
+
+  // Unknown subreddit — block for safety
+  return true;
 }
 
 // --- Subreddit Directory (local JSON, pre-fetched by fetch_subreddits.py) ---

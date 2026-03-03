@@ -79,17 +79,13 @@ body {
     background-color: var(--bg);
 }
 
-/* Title bar (sticky) */
+/* Title bar */
 .title-bar {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    background: var(--bg);
     text-align: center;
     padding: 8px 0;
 }
 .title-bar h1 {
-    font-size: 18px;
+    font-size: 20px;
     color: var(--text-heading);
     font-weight: 700;
     margin: 0;
@@ -620,6 +616,7 @@ summary:hover .permalink {
 /* Responsive — Mobile Card Layout */
 @media (max-width: 768px) {
 
+    .title-bar { position: sticky; top: 0; z-index: 100; background: var(--bg); }
     .controls { gap: 12px; }
     body { padding: 12px 12px 80px 12px; }  /* no right padding for timeline on mobile */
 
