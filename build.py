@@ -18,6 +18,15 @@ import sys
 
 SITE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+GOOGLE_ANALYTICS = """\
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-R2H3DBGJZJ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-R2H3DBGJZJ');
+</script>"""
+
 SOURCES = {
     "hackernews": os.path.expanduser("~/Projects/hackernews_top/hackernews"),
     "reddit": os.path.expanduser("~/Projects/reddit_top_light/reddit"),
@@ -104,6 +113,10 @@ def patch_reddit_html():
             # Inject CSS if not already present
             if ".title-subtitle a" not in new_text:
                 new_text = new_text.replace("</head>", REDDIT_TITLE_CSS + "\n</head>")
+        # Inject Google Analytics if not already present
+        if "G-R2H3DBGJZJ" not in new_text:
+            new_text = new_text.replace("</head>", GOOGLE_ANALYTICS + "\n</head>")
+        if new_text != text:
             open(path, "w").write(new_text)
             print(f"  patched {fname}")
         else:
@@ -143,6 +156,10 @@ def patch_hackernews_html():
         # Inject CSS block after </title> if not already present
         if ".title-subtitle a" not in text:
             text = text.replace("</title>", "</title>\n" + HN_TITLE_CSS)
+
+        # Inject Google Analytics if not already present
+        if "G-R2H3DBGJZJ" not in text:
+            text = text.replace("</head>", GOOGLE_ANALYTICS + "\n</head>")
 
         # Replace h1
         old = cfg["h1_old"]
@@ -194,6 +211,7 @@ def generate_index():
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <title>topindex</title>
+{GOOGLE_ANALYTICS}
 <style>
 :root {{
     --bg: #fafafa;
