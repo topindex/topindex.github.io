@@ -572,13 +572,17 @@ function restoreVisitedLinks() {
     const visited = JSON.parse(localStorage.getItem('hn_visited') || '{}');
     document.querySelectorAll('a[data-link="ext"]').forEach(a => {
         if (visited[a.href]) a.classList.add('visited');
-        a.addEventListener('click', function(e) {
-            this.classList.add('visited');
-            visited[this.href] = true;
-            localStorage.setItem('hn_visited', JSON.stringify(visited));
-        });
     });
 }
+document.addEventListener('mousedown', function(e) {
+    if (e.button === 2) return;
+    const a = e.target.closest('a[data-link="ext"]');
+    if (!a) return;
+    const visited = JSON.parse(localStorage.getItem('hn_visited') || '{}');
+    a.classList.add('visited');
+    visited[a.href] = true;
+    localStorage.setItem('hn_visited', JSON.stringify(visited));
+});
 
 function applyURLParams() {
     const params = new URLSearchParams(window.location.search);
