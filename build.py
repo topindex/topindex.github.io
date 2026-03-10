@@ -30,6 +30,7 @@ GOOGLE_ANALYTICS = """\
 SOURCES = {
     "hackernews": os.path.expanduser("~/Projects/hackernews_top/hackernews"),
     "reddit": os.path.expanduser("~/Projects/reddit_top_light/reddit"),
+    "lobsters": "/Volumes/Samsung-4TB-APFS/Projects/lobsters_top/lobsters",
 }
 
 SITES = [
@@ -58,6 +59,20 @@ SITES = [
             '<text x="16" y="24" text-anchor="middle" '
             'font-family="-apple-system,BlinkMacSystemFont,sans-serif" '
             'font-size="24" font-weight="700" fill="#fff">r</text>'
+            "</svg>"
+        ),
+    },
+    {
+        "key": "lobsters",
+        "label": "Lobsters",
+        "subtitle": "top lobsters posts",
+        "description": "Top posts from Lobsters, organized by week, month, and year",
+        "icon_svg": (
+            '<svg class="site-icon" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">'
+            '<rect width="32" height="32" rx="6" fill="#520000"/>'
+            '<text x="16" y="23" text-anchor="middle" '
+            'font-family="Arial,Helvetica,sans-serif" '
+            'font-size="22" font-weight="700" fill="white">L</text>'
             "</svg>"
         ),
     },
@@ -156,6 +171,62 @@ def patch_hackernews_html():
         # Inject CSS block after </title> if not already present
         if ".title-subtitle a" not in text:
             text = text.replace("</title>", "</title>\n" + HN_TITLE_CSS)
+
+        # Inject Google Analytics if not already present
+        if "G-R2H3DBGJZJ" not in text:
+            text = text.replace("</head>", GOOGLE_ANALYTICS + "\n</head>")
+
+        # Replace h1
+        old = cfg["h1_old"]
+        new = cfg["h1_new"]
+        if old in text:
+            text = text.replace(old, new)
+        elif "h1_old_alt" in cfg and cfg["h1_old_alt"] in text:
+            text = text.replace(cfg["h1_old_alt"], new)
+        elif new in text:
+            print(f"  skip {fname} (already patched)")
+            continue
+        else:
+            print(f"  WARNING: could not find h1 pattern in {fname}")
+            continue
+
+        open(path, "w").write(text)
+        print(f"  patched {fname}")
+
+
+LOBSTERS_TITLE_CSS = """\
+<style>
+.title-subtitle a { color: inherit; text-decoration: none; }
+.title-subtitle a:hover { color: var(--accent); }
+</style>"""
+
+
+def patch_lobsters_html():
+    """Patch lobsters HTML files: fix home link href and wrap subtitle in link."""
+    lob_dir = os.path.join(SITE_DIR, "lobsters")
+    patches = {
+        "index.html": {
+            "h1_old": '<h1><a href="index.html" class="home-link">topindex</a> <span class="title-sep">|</span> <span class="title-subtitle">top lobsters posts</span></h1>',
+            "h1_new": '<h1><a href="/" class="home-link">topindex</a> <span class="title-sep">|</span> <span class="title-subtitle"><a href="./">top lobsters posts</a></span></h1>',
+        },
+        "today.html": {
+            "h1_old": '<h1><a href="today.html" class="home-link">topindex</a> <span class="title-sep">|</span> <span class="title-subtitle">top lobsters posts — today</span></h1>',
+            "h1_old_alt": '<h1><a href="today.html" class="home-link">topindex</a> <span class="title-sep">|</span> <span class="title-subtitle">top lobsters posts &mdash; today</span></h1>',
+            "h1_new": '<h1><a href="/" class="home-link">topindex</a> <span class="title-sep">|</span> <span class="title-subtitle"><a href="./">top lobsters posts</a> — today</span></h1>',
+        },
+    }
+
+    for fname, cfg in patches.items():
+        path = os.path.join(lob_dir, fname)
+        if not os.path.exists(path):
+            print(f"  skip {fname} (not found)")
+            continue
+
+        text = open(path, "r").read()
+
+        # Inject CSS block after </title> if not already present
+        if ".title-subtitle a" not in text:
+            text = text.replace("</title>", "</title>\n" + LOBSTERS_TITLE_CSS)
 
         # Inject Google Analytics if not already present
         if "G-R2H3DBGJZJ" not in text:
@@ -335,7 +406,7 @@ main {{
 
 .sites {{
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: 24px;
     max-width: 700px;
     margin: 0 auto;
@@ -441,7 +512,8 @@ main {{
 
 <footer class="site-footer">
     Data from <a href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a>,
-    <a href="https://subranking.com" target="_blank" rel="noopener">subranking.com</a> &amp;
+    <a href="https://subranking.com" target="_blank" rel="noopener">subranking.com</a>,
+    <a href="https://lobste.rs" target="_blank" rel="noopener">Lobsters</a> &amp;
     <a href="https://pullpush.io" target="_blank" rel="noopener">PullPush API</a>
 </footer>
 
@@ -454,6 +526,7 @@ function toggleTheme() {{
     // Sync with sub-site themes
     localStorage.setItem('theme', c);
     localStorage.setItem('hn_theme', c);
+    localStorage.setItem('lob_theme', c);
 }}
 </script>
 </body>
@@ -476,18 +549,22 @@ function toggleTheme() {{
 def main():
     print("=== topindex build ===\n")
 
-    print("[1/4] Syncing sources...")
+    print("[1/5] Syncing sources...")
     sync_sources()
 
-    print("[2/4] Patching reddit HTML...")
+    print("[2/5] Patching reddit HTML...")
     patch_reddit_html()
     print()
 
-    print("[3/4] Patching hackernews HTML...")
+    print("[3/5] Patching hackernews HTML...")
     patch_hackernews_html()
     print()
 
-    print("[4/4] Generating root index...")
+    print("[4/5] Patching lobsters HTML...")
+    patch_lobsters_html()
+    print()
+
+    print("[5/5] Generating root index...")
     generate_index()
     print()
 

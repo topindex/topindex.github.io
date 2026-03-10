@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css">
+<script>!function(){var e=localStorage.getItem('lob_theme');e||(e=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',e)}()</script>
+<title>topindex | top lobsters posts</title>
+<style>
+.title-subtitle a { color: inherit; text-decoration: none; }
+.title-subtitle a:hover { color: var(--accent); }
+</style>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-R2H3DBGJZJ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-R2H3DBGJZJ');
+</script>
+</head>
+<body>
+
+<div class="title-bar">
+    <h1><a href="/" class="home-link">topindex</a> <span class="title-sep">|</span> <span class="title-subtitle"><a href="./">top lobsters posts</a></span></h1>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+</div>
+<div class="header">
+    <div class="controls">
+        <div class="control-group">
+            <label>Interval:</label>
+            <button data-interval="weekly" onclick="setInterval_('weekly')">1w</button>
+            <button data-interval="monthly" class="active" onclick="setInterval_('monthly')">1m</button>
+            <button data-interval="yearly" onclick="setInterval_('yearly')">1y</button>
+            <button data-interval="10y" onclick="setInterval_('10y')">10y</button>
+            <button data-interval="all" onclick="setInterval_('all')">all</button>
+        </div>
+        <div class="control-group">
+            <label>Top:</label>
+            <button data-topn="1" onclick="setTopN(1)">1</button>
+            <button data-topn="3" onclick="setTopN(3)">3</button>
+            <button data-topn="5" class="active" onclick="setTopN(5)">5</button>
+            <button data-topn="10" onclick="setTopN(10)">10</button>
+        </div>
+        <a href="today.html" class="nav-link" title="Live top posts">Live</a>
+    </div>
+    <div class="last-updated" id="last-updated"></div>
+</div>
+
+<div id="loading" style="display:none">Loading...</div>
+<div id="content"></div>
+<div id="tag-filters" class="tag-filters" style="display:none"></div>
+<div id="timeline"></div>
+<div id="tl-tooltip"></div>
+
+<button class="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">
+    <svg viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+</button>
+<button class="fab" id="fab" onclick="toggleExpandCollapse()" title="Expand/Collapse All">
+    <svg id="fab-expand" viewBox="0 0 24 24"><path d="M12 5.83L15.17 9l1.41-1.41L12 3 7.41 7.59 8.83 9 12 5.83zm0 12.34L8.83 15l-1.41 1.41L12 21l4.59-4.59L15.17 15 12 18.17z"/></svg>
+    <svg id="fab-collapse" style="display:none" viewBox="0 0 24 24"><path d="M7.41 18.59L8.83 20 12 16.83 15.17 20l1.41-1.41L12 14l-4.59 4.59zm9.18-13.18L15.17 4 12 7.17 8.83 4 7.41 5.41 12 10l4.59-4.59z"/></svg>
+</button>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

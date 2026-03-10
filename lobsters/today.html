@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css">
+<script>!function(){var e=localStorage.getItem('lob_theme');e||(e=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',e)}()</script>
+<title>topindex | top lobsters posts — today</title>
+<style>
+.title-subtitle a { color: inherit; text-decoration: none; }
+.title-subtitle a:hover { color: var(--accent); }
+</style>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-R2H3DBGJZJ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-R2H3DBGJZJ');
+</script>
+</head>
+<body>
+
+<div class="title-bar">
+    <h1><a href="/" class="home-link">topindex</a> <span class="title-sep">|</span> <span class="title-subtitle"><a href="./">top lobsters posts</a> — today</span></h1>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+</div>
+<div class="header">
+    <div class="controls">
+        <div class="control-group">
+            <label>Top:</label>
+            <button data-topn="1" onclick="setTopN(1)">1</button>
+            <button data-topn="3" onclick="setTopN(3)">3</button>
+            <button data-topn="5" class="active" onclick="setTopN(5)">5</button>
+            <button data-topn="10" onclick="setTopN(10)">10</button>
+        </div>
+        <a href="index.html" class="nav-link" title="Historical archive">Archive</a>
+    </div>
+    <div class="last-updated" id="last-updated"></div>
+</div>
+<div id="loading" style="display:none">Loading...</div>
+<div id="content"></div>
+
+<button class="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">
+    <svg viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+</button>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+let currentTopN = 5;
+let currentSort = 'score';
+let todayStories = [];
+let weekStories = [];
+const VALID_SORTS = ['score', 'comments', 'date'];
+const REFRESH_INTERVAL = 5 * 60 * 1000;
+
+/* Theme */
+function initTheme() {
+    const saved = localStorage.getItem('lob_theme');
+    if (saved) {
+        document.documentElement.dataset.theme = saved;
+    } else {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.dataset.theme = prefersDark ? 'dark' : 'light';
+    }
+}
+
+function toggleTheme() {
+    const html = document.documentElement;
+    const isDark = html.dataset.theme === 'dark';
+    html.dataset.theme = isDark ? 'light' : 'dark';
+    localStorage.setItem('lob_theme', html.dataset.theme);
+}
+
+initTheme();
+
+/* Helpers */
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function extractDomain(url) {
+    if (!url) return '';
+    try {
+        let d = url.replace(/^https?:\/\//, '').split('/')[0];
+        return d.replace(/^www\./, '');
+    } catch(e) {
+        return '';
+    }
+}
+
+function isLobstersUrl(url) {
+    if (!url) return false;
+    return url.indexOf('lobste.rs') !== -1;
+}
+
+function openAllLinks(sectionId, linkType) {
+    const section = document.getElementById(sectionId);
+    if (!section) return;
+    const links = section.querySelectorAll('a[data-link="' + linkType + '"]');
+    links.forEach(a => window.open(a.href, '_blank'));
+}
+
+function timeAgo(dateStr) {
+    const now = Date.now();
+    const then = new Date(dateStr.replace(' ', 'T')).getTime();
+    const diff = Math.floor((now - then) / 1000);
+    if (diff < 60) return diff + 's ago';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    return Math.floor(diff / 86400) + 'd ago';
+}
+
+function renderTags(tags) {
+    if (!tags || tags.length === 0) return '';
+    let html = ' ';
+    for (const tag of tags) {
+        const tagName = typeof tag === 'string' ? tag : tag.tag || tag;
+        if (!tagName) continue;
+        html += '<a class="tag-pill" href="https://lobste.rs/t/' + encodeURIComponent(tagName) + '" target="_blank">' + escapeHtml(tagName) + '</a>';
+    }
+    return html;
+}
+
+/* Data */
+const LOBSTERS_DAY_URL = 'https://lobste.rs/top/1d';
+const LOBSTERS_WEEK_URL = 'https://lobste.rs/top/1w';
+const CORS_PROXIES = [
+    url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+    url => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url),
+];
+
+async function fetchHtml(url) {
+    try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(resp.status);
+        return await resp.text();
+    } catch (e) {
+        for (const proxy of CORS_PROXIES) {
+            try {
+                const resp = await fetch(proxy(url));
+                if (resp.ok) return await resp.text();
+            } catch (_) {}
+        }
+        throw new Error('All proxies failed for ' + url);
+    }
+}
+
+function parseStories(html) {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    return Array.from(doc.querySelectorAll('.story')).map(li => {
+        const score = parseInt(li.querySelector('.voters a')?.textContent?.trim()) || 0;
+        const titleEl = li.querySelector('.u-url');
+        const title = titleEl?.textContent?.trim() || '';
+        let url = titleEl?.getAttribute('href') || '';
+        if (url.startsWith('/')) url = 'https://lobste.rs' + url;
+
+        const tags = Array.from(li.querySelectorAll('.tag')).map(t => t.textContent.trim());
+        const user = li.querySelector('.u-author')?.textContent?.trim() || '';
+
+        const timeEl = li.querySelector('time');
+        const created_at = timeEl?.getAttribute('title') || '';
+
+        const commentsEl = li.querySelector('.comments_label a[href]');
+        const commentsText = commentsEl?.textContent?.trim() || '0';
+        const comments_count = parseInt(commentsText) || 0;
+        let comments_url = commentsEl?.getAttribute('href') || '';
+        if (comments_url.startsWith('/')) comments_url = 'https://lobste.rs' + comments_url;
+
+        return { title, url, score, comments_count, comments_url, username: user, created_at, tags };
+    });
+}
+
+async function fetchStories() {
+    const loadingEl = document.getElementById('loading');
+    if (todayStories.length === 0) loadingEl.style.display = 'block';
+
+    const [dayResult, weekResult] = await Promise.allSettled([
+        fetchHtml(LOBSTERS_DAY_URL).then(parseStories),
+        fetchHtml(LOBSTERS_WEEK_URL).then(parseStories)
+    ]);
+
+    if (dayResult.status === 'fulfilled') todayStories = dayResult.value;
+    if (weekResult.status === 'fulfilled') weekStories = weekResult.value;
+
+    loadingEl.style.display = 'none';
+
+    if (todayStories.length === 0 && weekStories.length === 0) {
+        document.getElementById('content').innerHTML =
+            '<p style="text-align:center;color:var(--text-faint);padding:40px;">Failed to load data from Lobsters.<br><br><a href="https://lobste.rs/top/1d" target="_blank" style="color:var(--accent)">View on lobste.rs</a></p>';
+        return;
+    }
+
+    updateLastUpdated();
+    render();
+}
+
+function formatUpdatedTime() {
+    const now = new Date();
+    const h = now.getHours();
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return h12 + ':' + m + ' ' + ampm;
+}
+
+function updateLastUpdated() {
+    const el = document.getElementById('last-updated');
+    if (el) el.textContent = 'Updated ' + formatUpdatedTime();
+}
+
+/* Sort & Filter */
+function sortStories(items) {
+    const sorted = items.slice();
+    if (currentSort === 'comments') {
+        sorted.sort((a, b) => b.comments_count - a.comments_count);
+    } else if (currentSort === 'date') {
+        sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    } else {
+        sorted.sort((a, b) => b.score - a.score);
+    }
+    return sorted;
+}
+
+function setTopN(n) {
+    currentTopN = n;
+    document.querySelectorAll('[data-topn]').forEach(b => {
+        b.classList.toggle('active', parseInt(b.dataset.topn) === n);
+    });
+    render();
+}
+
+function setSort(key) {
+    if (VALID_SORTS.includes(key)) {
+        currentSort = key;
+        render();
+    }
+}
+
+function sortArrow(key) {
+    return currentSort === key ? ' \u25BC' : '';
+}
+
+/* Render */
+function renderSection(sectionId, label, items) {
+    const topItems = sortStories(items).slice(0, currentTopN);
+    let html = '<div class="year-section"><details open id="' + sectionId + '"><summary><span class="year-label">' + escapeHtml(label) + '</span></summary>';
+    html += '<div class="mobile-actions">';
+    html += '<button onclick="openAllLinks(\'' + sectionId + '\', \'lob\')">open all lobsters</button>';
+    html += '<button onclick="openAllLinks(\'' + sectionId + '\', \'ext\')">open all links</button>';
+    html += '<button onclick="openAllLinks(\'' + sectionId + '\', \'arc\')">open all archives</button>';
+    html += '</div>';
+    html += '<table>';
+    html += '<thead><tr>';
+    html += '<th class="col-score sortable' + (currentSort === 'score' ? ' sort-active' : '') + '" onclick="setSort(\'score\')">points' + sortArrow('score') + '</th>';
+    html += '<th class="col-comments sortable' + (currentSort === 'comments' ? ' sort-active' : '') + '" onclick="setSort(\'comments\')"><span class="th-label">cmts' + sortArrow('comments') + '</span> <span class="open-all" onclick="event.stopPropagation();openAllLinks(\'' + sectionId + '\', \'lob\')">open all</span></th>';
+    html += '<th><span class="open-all" onclick="openAllLinks(\'' + sectionId + '\', \'ext\')">open all</span></th>';
+    html += '<th class="col-archived"><span class="open-all" onclick="openAllLinks(\'' + sectionId + '\', \'arc\')">open all</span></th>';
+    html += '<th class="col-user"></th>';
+    html += '<th class="col-date sortable' + (currentSort === 'date' ? ' sort-active' : '') + '" onclick="setSort(\'date\')">date' + sortArrow('date') + '</th>';
+    html += '<th class="col-when">when</th>';
+    html += '</tr></thead><tbody>';
+
+    for (const item of topItems) {
+        const lobUrl = item.comments_url;
+        const domain = extractDomain(item.url);
+        const articleUrl = item.url || lobUrl;
+        const title = escapeHtml(item.title);
+        const archivedUrl = (item.url && !isLobstersUrl(item.url)) ? 'https://web.archive.org/web/0/' + item.url : '';
+        const user = item.username || '';
+        const userUrl = user ? 'https://lobste.rs/~' + encodeURIComponent(user) : '';
+        const ago = timeAgo(item.created_at);
+
+        html += '<tr class="post-row">';
+        html += '<td class="col-score">' + item.score.toLocaleString() + '</td>';
+        html += '<td class="col-comments"><a href="' + escapeHtml(lobUrl) + '" data-link="lob" target="_blank">' + item.comments_count.toLocaleString() + '</a></td>';
+        html += '<td class="col-title"><a href="' + escapeHtml(articleUrl) + '" data-link="ext" target="_blank">' + title + '</a>';
+        if (domain && !isLobstersUrl(item.url)) html += ' <span class="domain">(' + escapeHtml(domain) + ')</span>';
+        html += renderTags(item.tags);
+        html += '</td>';
+        html += '<td class="col-archived">' + (archivedUrl ? '<a href="' + escapeHtml(archivedUrl) + '" data-link="arc" target="_blank">[archived]</a>' : '') + '</td>';
+        html += '<td class="col-user">' + (user ? '<a href="' + userUrl + '" target="_blank">' + escapeHtml(user) + '</a>' : '') + '</td>';
+        const postDate = item.created_at ? item.created_at.split(' ')[0] : '';
+        html += '<td class="col-date">' + postDate + '</td>';
+        html += '<td class="col-when">' + ago + '</td>';
+        html += '</tr>';
+    }
+
+    html += '</tbody></table></details></div>';
+    return html;
+}
+
+function render() {
+    if (todayStories.length === 0 && weekStories.length === 0) return;
+
+    let html = '';
+    if (todayStories.length > 0) html += renderSection('section-today', 'Top Today', todayStories);
+    if (weekStories.length > 0) html += renderSection('section-week', 'Top This Week', weekStories);
+    document.getElementById('content').innerHTML = html;
+    restoreVisitedLinks();
+}
+
+/* Visited links */
+function restoreVisitedLinks() {
+    const visited = JSON.parse(localStorage.getItem('lob_visited') || '{}');
+    document.querySelectorAll('a[data-link="ext"]').forEach(a => {
+        if (visited[a.href]) a.classList.add('visited');
+    });
+}
+document.addEventListener('mousedown', function(e) {
+    if (e.button === 2) return;
+    const a = e.target.closest('a[data-link="ext"]');
+    if (!a) return;
+    const visited = JSON.parse(localStorage.getItem('lob_visited') || '{}');
+    a.classList.add('visited');
+    visited[a.href] = true;
+    localStorage.setItem('lob_visited', JSON.stringify(visited));
+});
+
+/* Init */
+document.addEventListener('DOMContentLoaded', function() {
+    fetchStories();
+    setInterval(fetchStories, REFRESH_INTERVAL);
+});
+</script>
+</body>
+</html>
