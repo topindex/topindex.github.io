@@ -38,6 +38,7 @@
             <button data-topn="10" onclick="setTopN(10)">10</button>
         </div>
         <a href="index.html" class="nav-link" title="Historical archive">Archive</a>
+        <button class="nav-link" onclick="forceRefresh()" title="Force refresh data">&#x21bb; Refresh</button>
     </div>
     <div class="last-updated" id="last-updated"></div>
 </div>
@@ -56,7 +57,32 @@ let currentSort = 'score';
 let todayStories = [];
 let weekStories = [];
 const VALID_SORTS = ['score', 'comments', 'date'];
-const REFRESH_INTERVAL = 5 * 60 * 1000;
+const CACHE_KEY = 'lob_today_cache';
+const CACHE_TTL = 24 * 60 * 60 * 1000;
+let lastFetchTime = null;
+let usedCache = false;
+
+function getCachedStories() {
+    try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        const cached = JSON.parse(raw);
+        if (Date.now() - cached.timestamp > CACHE_TTL) return null;
+        return cached;
+    } catch (e) {
+        return null;
+    }
+}
+
+function cacheStories(today, week) {
+    try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+            today: today,
+            week: week,
+            timestamp: Date.now()
+        }));
+    } catch (e) {}
+}
 
 /* Theme */
 function initTheme() {
@@ -176,7 +202,20 @@ function parseStories(html) {
     });
 }
 
-async function fetchStories() {
+async function fetchStories(bypassCache) {
+    if (!bypassCache) {
+        const cached = getCachedStories();
+        if (cached) {
+            todayStories = cached.today;
+            weekStories = cached.week;
+            lastFetchTime = cached.timestamp;
+            usedCache = true;
+            updateLastUpdated();
+            render();
+            return;
+        }
+    }
+
     const loadingEl = document.getElementById('loading');
     if (todayStories.length === 0) loadingEl.style.display = 'block';
 
@@ -196,8 +235,16 @@ async function fetchStories() {
         return;
     }
 
+    cacheStories(todayStories, weekStories);
+    lastFetchTime = Date.now();
+    usedCache = false;
     updateLastUpdated();
     render();
+}
+
+function forceRefresh() {
+    localStorage.removeItem(CACHE_KEY);
+    fetchStories(true);
 }
 
 function formatUpdatedTime() {
@@ -211,7 +258,14 @@ function formatUpdatedTime() {
 
 function updateLastUpdated() {
     const el = document.getElementById('last-updated');
-    if (el) el.textContent = 'Updated ' + formatUpdatedTime();
+    if (!el) return;
+    const time = lastFetchTime ? new Date(lastFetchTime) : new Date();
+    const h = time.getHours();
+    const m = String(time.getMinutes()).padStart(2, '0');
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    const timeStr = h12 + ':' + m + ' ' + ampm;
+    el.textContent = (usedCache ? 'Cached from ' : 'Updated ') + timeStr;
 }
 
 /* Sort & Filter */
@@ -325,7 +379,6 @@ document.addEventListener('mousedown', function(e) {
 /* Init */
 document.addEventListener('DOMContentLoaded', function() {
     fetchStories();
-    setInterval(fetchStories, REFRESH_INTERVAL);
 });
 </script>
 </body>
