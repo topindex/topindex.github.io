@@ -219,7 +219,17 @@ function openAllLinks(sectionId, linkType) {
     if (!section) return;
     const selector = 'a[data-link="' + linkType + '"]';
     const links = section.querySelectorAll(selector);
-    links.forEach(a => window.open(a.href, '_blank'));
+    if (linkType === 'ext') {
+        const visited = JSON.parse(localStorage.getItem('hn_visited') || '{}');
+        links.forEach(a => {
+            window.open(a.href, '_blank');
+            a.classList.add('visited');
+            visited[a.href] = true;
+        });
+        localStorage.setItem('hn_visited', JSON.stringify(visited));
+    } else {
+        links.forEach(a => window.open(a.href, '_blank'));
+    }
 }
 
 function copyPermalink(id, event) {
