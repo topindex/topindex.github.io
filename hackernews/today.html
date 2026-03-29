@@ -104,8 +104,19 @@ function extractDomain(url) {
 function openAllLinks(sectionId, linkType) {
     const section = document.getElementById(sectionId);
     if (!section) return;
-    const links = section.querySelectorAll('a[data-link="' + linkType + '"]');
-    links.forEach(a => window.open(a.href, '_blank'));
+    const selector = 'a[data-link="' + linkType + '"]';
+    const links = section.querySelectorAll(selector);
+    if (linkType === 'ext') {
+        const visited = JSON.parse(localStorage.getItem('hn_visited') || '{}');
+        links.forEach(a => {
+            window.open(a.href, '_blank');
+            a.classList.add('visited');
+            visited[a.href] = true;
+        });
+        localStorage.setItem('hn_visited', JSON.stringify(visited));
+    } else {
+        links.forEach(a => window.open(a.href, '_blank'));
+    }
 }
 
 function setRefreshLoading(isLoading) {
