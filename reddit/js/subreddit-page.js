@@ -308,6 +308,7 @@ function resetAndReload() {
   loadGeneration++;
   state.loadedPeriods = 0;
   state.isLoading = false;
+  state.allBoundaries = [];
   state.cachedPosts.clear();
   document.getElementById('posts-container').innerHTML = '';
   document.getElementById('subreddit-info').textContent = '';
