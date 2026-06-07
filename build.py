@@ -90,7 +90,7 @@ def sync_sources():
             continue
         # Ensure trailing slashes for rsync directory sync
         cmd = [
-            "rsync", "-a", "--delete",
+            "rsync", "-aL", "--delete",
             "--exclude", ".DS_Store",
             src.rstrip("/") + "/",
             dst.rstrip("/") + "/",

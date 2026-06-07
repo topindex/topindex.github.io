@@ -44,11 +44,9 @@
     <div class="controls">
       <div class="control-group">
         <label>Interval:</label>
-        <button class="control-btn interval-btn" data-interval="1d">1d</button>
         <button class="control-btn interval-btn" data-interval="1w">1w</button>
         <button class="control-btn interval-btn" data-interval="1m">1m</button>
         <button class="control-btn interval-btn" data-interval="1y">1y</button>
-        <button class="control-btn interval-btn" data-interval="10y">10y</button>
         <button class="control-btn interval-btn" data-interval="all">all</button>
       </div>
       <div class="control-group">
@@ -57,6 +55,8 @@
         <button class="control-btn top-btn" data-top="3">3</button>
         <button class="control-btn top-btn" data-top="5">5</button>
         <button class="control-btn top-btn" data-top="10">10</button>
+        <button class="control-btn top-btn" data-top="25">25</button>
+        <button class="control-btn top-btn" data-top="50">50</button>
       </div>
     </div>
     <div id="posts-container"></div>
@@ -70,10 +70,7 @@
     <div id="date-range-slider" class="date-range-slider"></div>
     <button id="date-range-clear" class="date-range-clear" title="Clear date range">&times;</button>
   </aside>
-  <footer class="site-footer">
-    Data from <a href="https://subranking.com" target="_blank" rel="noopener">subranking.com</a> &amp;
-    <a href="https://pullpush.io" target="_blank" rel="noopener">PullPush API</a>
-  </footer>
+  <footer class="site-footer">Top posts from PullPush before May 1, 2025 and the local Reddit Top backend after</footer>
   <script>function toggleTheme(){var t=document.documentElement,c=t.getAttribute('data-theme')==='dark'?'light':'dark';t.setAttribute('data-theme',c);localStorage.setItem('ti_theme',c)}</script>
   <script type="module" src="js/subreddit-page.js"></script>
 </body>

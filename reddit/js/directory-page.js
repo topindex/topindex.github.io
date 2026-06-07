@@ -19,7 +19,7 @@ function createSkeletonRows(container) {
   }
 }
 
-function renderSubredditRow(sub, showGrowth, index) {
+function renderSubredditRow(sub, index) {
   const a = document.createElement('a');
   a.className = 'subreddit-row';
   a.href = `subreddit.html?name=${encodeURIComponent(sub.name)}`;
@@ -46,13 +46,6 @@ function renderSubredditRow(sub, showGrowth, index) {
 
   a.append(rankSpan, img, nameSpan, subsSpan);
 
-  if (showGrowth && sub.growth_percentage != null) {
-    const growthSpan = document.createElement('span');
-    growthSpan.className = 'subreddit-growth';
-    growthSpan.textContent = `+${sub.growth_percentage.toFixed(1)}%`;
-    a.append(growthSpan);
-  }
-
   return a;
 }
 
@@ -76,9 +69,8 @@ async function loadColumn(listEl, type) {
   try {
     const subs = await fetchAllSubredditsCached(type);
     listEl.innerHTML = '';
-    const showGrowth = type === 'weekly';
     subs.forEach((sub, i) => {
-      listEl.appendChild(renderSubredditRow(sub, showGrowth, i + 1));
+      listEl.appendChild(renderSubredditRow(sub, i + 1));
     });
   } catch (err) {
     renderError(listEl, 'Failed to load subreddits.', () => loadColumn(listEl, type));
@@ -167,10 +159,8 @@ function renderFavorites() {
 
 document.addEventListener('DOMContentLoaded', () => {
   const listLargest = document.getElementById('list-largest');
-  const listWeekly = document.getElementById('list-weekly');
 
   renderFavorites();
   loadColumn(listLargest, 'largest');
-  loadColumn(listWeekly, 'weekly');
   setupDirectorySearch();
 });

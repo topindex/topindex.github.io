@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script>!function(){var e=localStorage.getItem('ti_theme');e||(e=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',e)}()</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add subreddits | topindex</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .add-page { max-width: 1240px; margin: 0 auto; padding: 32px 20px 64px; }
+    .login-panel {
+      max-width: 420px;
+      margin: 44px auto 0;
+      padding: 22px;
+      background: var(--color-surface, #fff);
+      border: 1px solid var(--color-border, #e0e0e0);
+      border-radius: 8px;
+    }
+    .login-panel h2 { margin: 0 0 18px; font-size: 1.15rem; }
+    .login-form { display: grid; gap: 14px; }
+    .login-message { min-height: 22px; color: var(--color-text-muted, #6b7280); }
+    .login-message.error { color: #b91c1c; }
+    .add-panel {
+      display: grid;
+      gap: 18px;
+      padding: 20px;
+      background: var(--color-surface, #fff);
+      border: 1px solid var(--color-border, #e0e0e0);
+      border-radius: 8px;
+    }
+    .add-field { display: grid; gap: 8px; }
+    .add-field label { font-weight: 700; color: var(--color-text, #111827); }
+    .add-field textarea,
+    .add-field input {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid var(--color-border, #d1d5db);
+      border-radius: 8px;
+      background: var(--color-bg, #fff);
+      color: var(--color-text, #111827);
+      font: inherit;
+      padding: 12px 14px;
+    }
+    .add-field textarea { min-height: 120px; resize: vertical; line-height: 1.5; }
+    .add-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .add-submit {
+      border: 0;
+      border-radius: 8px;
+      background: var(--color-accent, #2563eb);
+      color: #fff;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 700;
+      padding: 11px 18px;
+    }
+    .add-submit:disabled { cursor: wait; opacity: 0.65; }
+    .add-summary { min-height: 24px; color: var(--color-text-muted, #4b5563); }
+    .add-summary.success { color: #047857; }
+    .add-summary.warning { color: #b45309; }
+    .add-summary.error { color: #b91c1c; }
+    .add-results { display: grid; gap: 8px; margin-top: 22px; }
+    .add-result {
+      display: grid;
+      grid-template-columns: minmax(130px, 1fr) auto minmax(180px, 2fr);
+      gap: 12px;
+      align-items: center;
+      border: 1px solid var(--color-border, #e5e7eb);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .add-result-name { color: inherit; font-weight: 700; text-decoration: none; }
+    .add-result-status { font-weight: 700; }
+    .add-result.added .add-result-status { color: #047857; }
+    .add-result.failed .add-result-status { color: #b91c1c; }
+    .add-result-detail { color: var(--color-text-muted, #6b7280); min-width: 0; overflow-wrap: anywhere; }
+    .header-link { color: inherit; font-size: 0.9rem; font-weight: 700; text-decoration: none; }
+    .status-section {
+      margin-top: 28px;
+      display: grid;
+      gap: 14px;
+      padding: 20px;
+      background: var(--color-surface, #fff);
+      border: 1px solid var(--color-border, #e0e0e0);
+      border-radius: 8px;
+    }
+    .status-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .status-title-row { display: flex; align-items: center; gap: 8px; }
+    .status-title { margin: 0; font-size: 1.15rem; }
+    .status-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .status-refresh {
+      display: inline-grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--color-border, #d1d5db);
+      border-radius: 8px;
+      background: var(--color-bg, #fff);
+      color: var(--color-text, #111827);
+      cursor: pointer;
+      padding: 0;
+    }
+    .status-refresh svg { width: 17px; height: 17px; }
+    .status-refresh:disabled { cursor: wait; opacity: 0.65; }
+    .status-refresh.loading svg { animation: status-spin 0.9s linear infinite; }
+    @keyframes status-spin { to { transform: rotate(360deg); } }
+    .status-search {
+      min-width: min(260px, 100%);
+      border: 1px solid var(--color-border, #d1d5db);
+      border-radius: 8px;
+      background: var(--color-bg, #fff);
+      color: var(--color-text, #111827);
+      font: inherit;
+      padding: 9px 12px;
+    }
+    .status-message { min-height: 22px; color: var(--color-text-muted, #6b7280); }
+    .status-message.error { color: #b91c1c; }
+    .status-table-wrap {
+      max-height: 66vh;
+      overflow: auto;
+      border: 1px solid var(--color-border, #e5e7eb);
+      border-radius: 8px;
+      background: var(--color-bg, #fff);
+    }
+    .status-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 1240px; table-layout: fixed; }
+    .status-col-name { width: 13%; }
+    .status-col-type { width: 5%; }
+    .status-col-subscribers { width: 10%; }
+    .status-col-datetime { width: 11%; }
+    .status-col-day { width: 9%; }
+    .status-col-status { width: 10%; }
+    .status-col-action { width: 11%; }
+    .status-table th,
+    .status-table td { border-bottom: 1px solid var(--color-border, #e5e7eb); padding: 9px 12px; text-align: left; vertical-align: top; }
+    .status-table th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: var(--color-surface, #fff);
+      font-size: 0.76rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--color-text-muted, #6b7280);
+    }
+    .status-sort {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      max-width: 100%;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      font: inherit;
+      font-weight: inherit;
+      letter-spacing: inherit;
+      padding: 0;
+      text-align: left;
+      text-transform: inherit;
+    }
+    .status-sort::after { content: ''; min-width: 10px; color: var(--color-accent, #ff6600); }
+    .status-sort[aria-sort="ascending"]::after { content: '↑'; }
+    .status-sort[aria-sort="descending"]::after { content: '↓'; }
+    .status-table tbody tr:nth-child(even) { background: rgba(127, 127, 127, 0.08); }
+    .status-table tbody tr:hover { background: var(--color-accent-light, rgba(255, 102, 0, 0.12)); }
+    .status-table tr:last-child td { border-bottom: 0; }
+    .status-table a { color: inherit; font-weight: 700; text-decoration: none; }
+    .status-table td { overflow-wrap: anywhere; }
+    .status-cell { min-width: 0; white-space: normal; }
+    .status-cell .status-muted {
+      display: block;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      white-space: normal;
+    }
+    .status-muted { color: var(--color-text-muted, #6b7280); font-size: 0.86em; }
+    .status-pill {
+      display: block;
+      max-width: 100%;
+      font-weight: 600;
+      line-height: 1.25;
+      color: var(--color-text-muted, #6b7280);
+      overflow-wrap: anywhere;
+      white-space: normal;
+    }
+    .status-pill.ok,
+    .status-pill.active { color: #047857; }
+    .status-pill.error,
+    .status-pill.banned,
+    .status-pill.private,
+    .status-pill.not_found,
+    .status-pill.not_found_or_banned,
+    .status-pill.fetch_error { color: #b91c1c; }
+    .status-actions { display: flex; justify-content: flex-end; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .status-action {
+      border: 1px solid var(--color-border, #d1d5db);
+      border-radius: 8px;
+      background: var(--color-bg, #fff);
+      color: var(--color-text, #111827);
+      cursor: pointer;
+      font: inherit;
+      font-weight: 700;
+      padding: 7px 10px;
+      white-space: nowrap;
+    }
+    .status-action.start { border-color: #047857; color: #047857; }
+    .status-action.stop { border-color: #b91c1c; color: #b91c1c; }
+    .status-action.remove { border-color: #b91c1c; color: #b91c1c; }
+    .status-action.icon-only {
+      display: inline-grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      padding: 0;
+    }
+    .status-action.icon-only svg {
+      width: 17px;
+      height: 17px;
+    }
+    .status-action:disabled { cursor: wait; opacity: 0.6; }
+    @media (max-width: 640px) {
+      .add-result { grid-template-columns: 1fr; gap: 4px; }
+      .add-page { padding-inline: 12px; }
+      .add-actions { align-items: stretch; flex-direction: column; }
+      .add-submit { width: 100%; }
+      .status-toolbar { align-items: stretch; flex-direction: column; }
+      .status-search { width: 100%; }
+    }
+  </style>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-R2H3DBGJZJ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-R2H3DBGJZJ');
+</script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <h1><a href="/">topindex</a> <span class="title-sep">|</span> <span class="title-subtitle">add subreddits</span></h1>
+      <a class="header-link" href="index.html">Directory</a>
+      <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </div>
+  </header>
+  <main class="add-page">
+    <section id="admin-login-panel" class="login-panel" aria-labelledby="login-title">
+      <h2 id="login-title">Admin login</h2>
+      <form id="admin-login-form" class="login-form">
+        <div class="add-field">
+          <label for="admin-username-input">Username</label>
+          <input id="admin-username-input" type="text" autocomplete="username" value="admin">
+        </div>
+        <div class="add-field">
+          <label for="admin-password-input">Password</label>
+          <input id="admin-password-input" type="password" autocomplete="current-password">
+        </div>
+        <div class="add-actions">
+          <button id="admin-login-btn" class="add-submit" type="submit">Log in</button>
+          <div id="admin-login-message" class="login-message" role="status" aria-live="polite"></div>
+        </div>
+      </form>
+    </section>
+    <div id="admin-shell" hidden>
+      <form id="add-subreddits-form" class="add-panel">
+        <div class="add-field">
+          <label for="subreddit-list-input">Subreddits</label>
+          <textarea id="subreddit-list-input" autocomplete="off" spellcheck="false" placeholder="python, askreddit, r/worldnews"></textarea>
+        </div>
+        <div class="add-actions">
+          <button id="submit-subreddits-btn" class="add-submit" type="submit">Add subreddits</button>
+          <div id="add-summary" class="add-summary" role="status" aria-live="polite"></div>
+        </div>
+      </form>
+      <div id="add-results" class="add-results"></div>
+      <section class="status-section" aria-labelledby="status-title">
+        <div class="status-header">
+          <div class="status-title-row">
+            <h2 id="status-title" class="status-title">Subreddit status</h2>
+            <button id="status-refresh-btn" class="status-refresh" type="button" aria-label="Refresh status list" title="Refresh status list">
+              <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M16 8h5V3"/></svg>
+            </button>
+          </div>
+          <div class="status-toolbar">
+            <input id="status-search-input" class="status-search" type="search" placeholder="Search status list..." autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+        <div id="status-message" class="status-message" role="status" aria-live="polite">Load the status list.</div>
+        <div class="status-table-wrap">
+          <table class="status-table">
+            <colgroup>
+              <col class="status-col-name">
+              <col class="status-col-type">
+              <col class="status-col-subscribers">
+              <col class="status-col-datetime">
+              <col class="status-col-datetime">
+              <col class="status-col-day">
+              <col class="status-col-day">
+              <col class="status-col-datetime">
+              <col class="status-col-status">
+              <col class="status-col-action">
+            </colgroup>
+            <thead>
+              <tr>
+                <th><button class="status-sort" type="button" data-sort="subreddit">Subreddit</button></th>
+                <th><button class="status-sort" type="button" data-sort="type">Type</button></th>
+                <th><button class="status-sort" type="button" data-sort="subscribers">Subscribers</button></th>
+                <th><button class="status-sort" type="button" data-sort="meta_updated">Sub meta updated</button></th>
+                <th><button class="status-sort" type="button" data-sort="history_updated">Subcount history updated</button></th>
+                <th><button class="status-sort" type="button" data-sort="history_through">Subcount history through</button></th>
+                <th><button class="status-sort" type="button" data-sort="posts_through">Posts fetched through</button></th>
+                <th><button class="status-sort" type="button" data-sort="posts_updated">Posts updated</button></th>
+                <th><button class="status-sort" type="button" data-sort="status">Status</button></th>
+                <th><button class="status-sort" type="button" data-sort="fetch_posts">Actions</button></th>
+              </tr>
+            </thead>
+            <tbody id="status-table-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+  <footer class="site-footer">Data from the local Reddit Top backend</footer>
+  <script>function toggleTheme(){var t=document.documentElement,c=t.getAttribute('data-theme')==='dark'?'light':'dark';t.setAttribute('data-theme',c);localStorage.setItem('ti_theme',c)}</script>
+  <script>
+    (function(){
+      var form=document.getElementById('admin-login-form');
+      if(!form)return;
+      form.addEventListener('submit',async function(event){
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        var username=document.getElementById('admin-username-input').value.trim();
+        var password=document.getElementById('admin-password-input').value;
+        var button=document.getElementById('admin-login-btn');
+        var message=document.getElementById('admin-login-message');
+        if(!username||!password){message.textContent='Enter username and password.';message.className='login-message error';return;}
+        button.disabled=true;
+        message.textContent='Checking credentials...';
+        message.className='login-message';
+        try{
+          var response=await fetch('/api/subreddits/login',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:username,password:password})});
+          if(!response.ok){
+            var json=await response.json().catch(function(){return{};});
+            throw new Error(json.detail||'Login failed.');
+          }
+          location.replace('add.html?v=admin-login3');
+        }catch(error){
+          message.textContent=error.message||'Login failed.';
+          message.className='login-message error';
+          button.disabled=false;
+        }
+      },true);
+    })();
+  </script>
+  <script type="module" src="js/add-subreddits-page.js?v=admin-remove"></script>
+</body>
+</html>

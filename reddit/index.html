@@ -37,20 +37,13 @@
       <div id="favorites-list" class="favorites-list"></div>
     </div>
     <div class="directory">
-    <div class="directory-col" id="col-largest">
-      <h2>Largest</h2>
-      <div class="subreddit-list" id="list-largest"></div>
-    </div>
-    <div class="directory-col" id="col-weekly">
-      <h2>Weekly Growth</h2>
-      <div class="subreddit-list" id="list-weekly"></div>
-    </div>
+      <div class="directory-col" id="col-largest">
+        <h2>Largest</h2>
+        <div class="subreddit-list" id="list-largest"></div>
+      </div>
     </div>
   </main>
-  <footer class="site-footer">
-    Data from <a href="https://subranking.com" target="_blank" rel="noopener">subranking.com</a> &amp;
-    <a href="https://pullpush.io" target="_blank" rel="noopener">PullPush API</a>
-  </footer>
+  <footer class="site-footer">Data from the local Reddit Top backend</footer>
   <script>function toggleTheme(){var t=document.documentElement,c=t.getAttribute('data-theme')==='dark'?'light':'dark';t.setAttribute('data-theme',c);localStorage.setItem('ti_theme',c)}</script>
   <script type="module" src="js/directory-page.js"></script>
 </body>
